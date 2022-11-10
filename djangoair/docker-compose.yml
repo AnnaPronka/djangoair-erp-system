@@ -1,0 +1,55 @@
+version: "3.0"
+
+volumes:
+  postgres_volume:
+
+services:
+  air:
+    build: .
+    restart: always
+    command: sh -c "gunicorn --bind 0.0.0.0:5000 main.wsgi"
+    environment:
+      - EMAIL_HOST_PASSWORD=!Qaz@Wsx
+      - SOCIAL_AUTH_GOOGLE_OAUTH2_KEY=59726549249-8liepk386tapfmmggcgdpegjoa2p6567.apps.googleusercontent.com
+      - SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET=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
+#    volumes:
+#      - .:/djair
+    ports:
+      - 5000:5000
+    depends_on:
+      - redis
+      - postgres
+
+  celery:
+    build: .
+    restart: always
+    command: celery -A main worker -l INFO
+#    volumes:
+#      - .:/djair
+    depends_on:
+      - air
+      - redis
+
+  flower:
+    build: .
+    command:  celery -A main flower --port=5555
+#    volumes:
+#      - .:/djair
+    ports:
+      - 5555:5555
+    depends_on:
+      - air
+      - redis
+      - celery
+
+  postgres:
+    build: ./postgres
+    restart: always
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=1408408
+
+  redis:
+    image: redis
+    restart: always
